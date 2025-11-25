@@ -18,17 +18,45 @@ $email = $_POST['email'] ?? '';
 $plainPassword = $_POST['password'] ?? '';
 
 // Security processing steps
-$pepper = "MySecretPepper2024!"; // Secret pepper
+$pepper = "Louvre"; // Secret pepper
 $salt = bin2hex(random_bytes(16)); // Generate random salt
 $pepperedPassword = $plainPassword . $pepper;
 $saltedPepperedPassword = $pepperedPassword . $salt;
 
+
+$md5_start = microtime(true); 
+$md5Hash = md5($saltedPepperedPassword);
+$md5_time = (microtime(true) - $md5_start) * 1000;
+
+usleep(100000);
+
+$sha1_start = microtime(true); 
+$sha1_hash = hash('sha1', $saltedPepperedPassword);
+$sha1_time = (microtime(true) - $sha1_start) * 1000;
+
+usleep(100000);
+
+$sha256_start = microtime(true); 
+$sha256_hash = hash('sha256', $saltedPepperedPassword);
+$sha256_time = (microtime(true) - $sha256_start) * 1000;
+
+usleep(100000);
+
+$sha512_start = microtime(true); 
+$sha512_hash = hash('sha512', $saltedPepperedPassword);
+$sha512_time = (microtime(true) - $sha512_start) * 1000;
+
+usleep(100000);
+
 // Strong hashing (Argon2ID)
+$argon2_start = microtime(true); 
 $argon2Hash = password_hash($saltedPepperedPassword, PASSWORD_ARGON2ID, [
     'memory_cost' => 65536,
     'time_cost' => 4,
     'threads' => 3
 ]);
+$argon2_time = (microtime(true) - $argon2_start) * 1000;
+
 
 // Store in database
 $stmt = $conn->prepare("INSERT INTO users (email, password_hash, salt) VALUES (?, ?, ?)");
@@ -36,7 +64,6 @@ if ($stmt) {
     $stmt->bind_param("sss", $email, $argon2Hash, $salt);
     $stmt->execute();
     if ($stmt->affected_rows > 0) {
-        echo "User stored successfully.";
     } else {
         echo "Failed to store user.";
     }
@@ -205,7 +232,7 @@ $conn->close();
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔒 Password Security Process</h1>
+            <h1>Password Security Process</h1>
             <p>Step-by-step demonstration of secure password handling</p>
         </div>
         
@@ -219,8 +246,8 @@ $conn->close();
                 <div class="step-content">
                     <p><strong>User Email:</strong> <?php echo htmlspecialchars($email); ?></p>
                     <div class="code-block"><?php echo htmlspecialchars($plainPassword); ?></div>
-                    <div class="warning">
-                        <strong>⚠️ Security Risk:</strong> Never store passwords in plain text! Anyone with database access can see all passwords.
+                    <div class="result">
+                        HTTPS: Only client and server can see the password in plain text. 
                     </div>
                 </div>
             </div>
@@ -237,7 +264,7 @@ $conn->close();
                     <p><strong>Password + Pepper:</strong></p>
                     <div class="code-block"><?php echo htmlspecialchars($pepperedPassword); ?></div>
                     <div class="result">
-                        <strong>✅ Security Benefit:</strong> Even if database is compromised, attacker needs the pepper to crack passwords.
+                        Even if database is leaked, attacker needs the pepper to crack passwords.
                     </div>
                 </div>
             </div>
@@ -254,7 +281,7 @@ $conn->close();
                     <p><strong>Password + Pepper + Salt:</strong></p>
                     <div class="code-block"><?php echo htmlspecialchars($saltedPepperedPassword); ?></div>
                     <div class="result">
-                        <strong>✅ Security Benefit:</strong> Prevents rainbow table attacks and ensures identical passwords have different hashes.
+                        Ensures identical passwords have different hashes.
                     </div>
                 </div>
             </div>
@@ -268,32 +295,29 @@ $conn->close();
                 <div class="step-content">
                     <div class="security-comparison">
                         <div class="security-bad">
-                            <h3>❌ MD5 (Insecure)</h3>
-                            <p><strong>Algorithm:</strong> MD5</p>
-                            <p><strong>Speed:</strong> Very Fast (Bad for passwords)</p>
-                            <p><strong>Hash Length:</strong> 32 characters</p>
+                            <h3>MD5</h3>
+                            <p><strong>Speed in ms:</strong> <?php echo $md5_time; ?></p>
                             <div class="code-block"><?php echo $md5Hash; ?></div>
-                            <p><strong>Problems:</strong></p>
-                            <ul>
-                                <li>Too fast - enables brute force attacks</li>
-                                <li>Cryptographically broken</li>
-                                <li>Vulnerable to collision attacks</li>
-                            </ul>
+                        </div>
+                        
+                        <div class="security-bad">
+                            <h3>SHA-256</h3>
+                            <p><strong>Speed in ms:</strong> <?php echo $sha256_time; ?></p>
+                            <div class="code-block"><?php echo $sha256_hash; ?></div>
+                        </div>
+                    </div>
+                    <div class="security-comparison">
+                        <div class="security-bad">
+                            <h3>SHA-512</h3>
+                            <!-- Gleich schnell oder schneller wie 256, da auf 64-Bit Systeme ausgelegt. SHA256 nur auf 32 Bit -->
+                            <p><strong>Speed in ms:</strong> <?php echo $sha512_time; ?></p>
+                            <div class="code-block"><?php echo $sha512_hash; ?></div>
                         </div>
                         
                         <div class="security-good">
-                            <h3>✅ Argon2ID (Secure)</h3>
-                            <p><strong>Algorithm:</strong> Argon2ID</p>
-                            <p><strong>Speed:</strong> Deliberately Slow</p>
-                            <p><strong>Memory Cost:</strong> 64MB</p>
+                            <h3>Argon2ID</h3>
+                            <p><strong>Speed in ms:</strong> <?php echo $argon2_time; ?></p>
                             <div class="code-block" style="font-size: 0.8em;"><?php echo $argon2Hash; ?></div>
-                            <p><strong>Advantages:</strong></p>
-                            <ul>
-                                <li>Memory-hard function</li>
-                                <li>Configurable time/memory costs</li>
-                                <li>Resistant to GPU/ASIC attacks</li>
-                                <li>Winner of password hashing competition</li>
-                            </ul>
                         </div>
                     </div>
                 </div>
@@ -303,32 +327,51 @@ $conn->close();
             <div class="step">
                 <div class="step-header">
                     <span class="step-number">5</span>
-                    <span class="step-title">Database Storage</span>
+                    <span class="step-title">Result</span>
                 </div>
                 <div class="step-content">
-                    <?php if ($dbStored): ?>
-                        <div class="result">
-                            <strong>✅ Successfully stored in database!</strong>
-                        </div>
-                        <p><strong>Stored Data:</strong></p>
+                    <p><strong>Data:</strong></p>
+                    <div class="code-block">
                         <ul>
                             <li><strong>Email:</strong> <?php echo htmlspecialchars($email); ?></li>
-                            <li><strong>Password Hash (Argon2ID):</strong> <div class="code-block" style="font-size: 0.8em;"><?php echo $argon2Hash; ?></div></li>
-                            <li><strong>Salt:</strong> <div class="code-block"><?php echo htmlspecialchars($salt); ?></div></li>
+                            <li><strong>Password Hash (Argon2ID):</strong><?php echo $argon2Hash; ?>/li>
+                            <li><strong>Salt:</strong> <?php echo htmlspecialchars($salt); ?></li>
                         </ul>
-                        <div class="result">
-                            <strong>🔒 Security Achievement:</strong> Original password is completely unrecoverable from stored data!
-                        </div>
-                    <?php else: ?>
-                        <div class="warning">
-                            <strong>❌ Database Error:</strong> <?php echo htmlspecialchars($dbError); ?>
-                        </div>
-                    <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
-            <a href="signup.php" class="back-btn">← Back to Sign Up</a>
+            <a onclick="showSteps()" class="back-btn", id="next">Next</a>
         </div>
     </div>
+
+    <script>
+    var step = 0
+
+    function showSteps(){
+        if(step == 5){
+            document.location.href = "http://localhost:8080" 
+        }
+        step = step + 1
+        const divs = document.querySelectorAll('.step');
+
+        // Loop through divs starting from index 3 (elements later than index 2)
+        for (let i = step; i < divs.length; i++) {
+            divs[i].setAttribute("hidden","hidden")
+        }
+        for (let i = 0; i < step; i++) {
+            divs[i].removeAttribute("hidden")
+        }  
+        window.scrollBy({
+            top: 700,      // Amount to scroll vertically
+            behavior: 'smooth' // Smooth scrolling
+        });
+        if(step == 5){
+            document.getElementById("next").innerHTML = "Save to database and view in PHPMyAdmin"
+        }
+    }
+    showSteps()
+    </script>
+
 </body>
 </html>

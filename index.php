@@ -18,29 +18,30 @@ if ($conn->connect_error) {
     die("Connection failure: " 
         . $conn->connect_error);
 } 
-
+ 
 // Creating a database named geekdata
-$sql = "CREATE DATABASE password_demo;
-USE password_demo;
+$sql = "CREATE DATABASE IF NOT EXISTS password_demo";
+if ($conn->query($sql) === TRUE) {
+} else {
+    echo "Error creating database: " . $conn->error . "<br>";
+}
 
-CREATE TABLE users (
+// Select database
+$conn->select_db("password_demo");
+
+// Create table
+$sql = "CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     salt VARCHAR(32) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);";
-
-
-try {
-    if ($conn->query($sql) === TRUE) {
-        echo "Database with name geekdata";
-    } else {
-        echo "Error: " . $conn->error;
-    }
+)";
+if ($conn->query($sql) === TRUE) {
+} else {
+    echo "Error creating table: " . $conn->error . "<br>";
 }
-catch (mysqli_sql_exception $e) {
-}
+
 // Closing connection
 $conn->close();
 ?>
@@ -170,12 +171,12 @@ $conn->close();
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 Sign Up Demo</h1>
-            <p>Password Security Educational Tool</p>
+            <h1>Sign Up</h1>
+            <p>Welcome to our <b>Super Secure Service</b></p>
         </div>
         
         <div class="warning">
-            <strong>⚠️ Educational Purpose Only:</strong> This demo shows passwords in plain text for learning. Never do this in production!
+            This demo shows passwords in plain text. Never do this in production!
         </div>
         
         <form method="POST" action="explain.php">
@@ -189,10 +190,10 @@ $conn->close();
                 <input type="password" id="password" name="password" required>
                 
                 <div class="password-label">Password in clear text:</div>
-                <div class="password-display" id="passwordDisplay">Type your password above...</div>
+                <div class="password-display" id="passwordDisplay"></div>
             </div>
             
-            <button type="submit" class="submit-btn">Sign Up & See Security Process</button>
+            <button type="submit" class="submit-btn">Sign Up</button>
         </form>
     </div>
     
@@ -200,7 +201,7 @@ $conn->close();
         document.getElementById('password').addEventListener('input', function() {
             const passwordDisplay = document.getElementById('passwordDisplay');
             const password = this.value;
-            passwordDisplay.textContent = password || 'Type your password above...';
+            passwordDisplay.textContent = password || '';
         });
     </script>
 </body>
