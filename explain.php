@@ -5,6 +5,28 @@ $dbname = 'password_demo';
 $username = 'root';
 $password = 'notSecureChangeMe';
 
+
+$sha1Password = strtoupper(sha1($password)); // HIBP expects uppercase SHA-1
+$prefix = substr($sha1Password, 0, 5);       // First 5 chars
+$suffix = substr($sha1Password, 5);          // Remaining chars
+$url = "https://api.pwnedpasswords.com/range/" . $prefix;
+
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$result = curl_exec($ch);
+curl_close($ch);
+$lines = explode("\n", $result);
+$found = false;
+
+foreach ($lines as $line) {
+    list($hashSuffix, $count) = explode(":", $line);
+    if ($hashSuffix === $suffix) {
+        $found = true;
+        break;
+    }
+}
+
+
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
 
@@ -237,6 +259,45 @@ $conn->close();
         </div>
         
         <div class="content">
+            <div class="step">
+                <div class="step-header">
+                    <span class="step-number">0</span>
+                    <span class="step-title">Breach Check</span>
+                </div>
+                <div class="step-content">
+                    <div class="code-block"><?php echo "Clear Text: ".htmlspecialchars($plainPassword); ?></div>
+                    <div class="code-block"><?php echo "Sha1 hash: ".$sha1Password; ?></div>
+                    <div class="code-block"><?php echo "Sha1 prefix: ".$prefix; ?></div>
+                    <div class="code-block"> API response: <br> <?php 
+                        $temp = 0;
+                        foreach ($lines as $line) {
+                            $temp = $temp+1;
+                            if($temp < 5){
+                                echo $line."<br>";
+                            }
+                            else{
+                                if(str_contains($line, $suffix)){
+                                    echo $line."<br>";
+                                }
+                            }
+                        }
+                        echo "...";
+                    ?></div>
+                     <?php 
+                        if (!$found) {
+                            echo '<div class="result">
+                                Password not found in breaches. Safe to use.
+                            </div>';
+                        }
+                        else{
+                            echo '<div class="warning">
+                                Password breached. Do not use.
+                            </div>';
+                        }
+                    ?>
+                </div>
+            </div>
+
             <!-- Step 1: Original Password -->
             <div class="step">
                 <div class="step-header">

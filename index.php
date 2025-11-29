@@ -178,7 +178,7 @@ $conn->close();
             This demo shows passwords in plain text. Never do this in production!
         </div>
         
-        <form method="POST" action="explain.php">
+        <form method="POST" action="explain.php" id="form">
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" name="email" required>
@@ -187,9 +187,14 @@ $conn->close();
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" name="password" required>
+                <label for="passwordrepeat">Repeat Password</label>
+                <input type="password" id="passwordrepeat" name="passwordrepeat" required>
                 
                 <div class="password-label">Password in clear text:</div>
                 <div class="password-display" id="passwordDisplay"></div>
+            </div>
+
+            <div class="warning" id="error" hidden>
             </div>
             
             <button type="submit" class="submit-btn">Sign Up</button>
@@ -198,10 +203,43 @@ $conn->close();
     
     <script>
         document.getElementById('password').addEventListener('input', function() {
+            document.getElementById("error").textContent = ""
+            document.getElementById("error").setAttribute("hidden","hidden")
             const passwordDisplay = document.getElementById('passwordDisplay');
             const password = this.value;
             passwordDisplay.textContent = password || '';
         });
+
+        document.getElementById('form').addEventListener('submit', function(e) {
+        e.preventDefault(); // prevent form submission
+        
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('passwordrepeat').value;
+        const errorMsg = document.getElementById("error")
+        errorMsg.removeAttribute("hidden")
+
+        // Password policy
+        const minLength = 8;
+
+        // Check password match
+        if (password !== confirmPassword) {
+            errorMsg.textContent = "Passwords do not match.";
+            return;
+        }
+
+        // Check password policy
+        if (password.length < minLength) {
+            errorMsg.textContent = `Password must be at least ${minLength} characters long.`;
+            return;
+        }
+
+        // If all checks pass, submit the form
+        errorMsg.textContent = "";
+        this.submit();
+    });
+
+
+
     </script>
 </body>
 </html>
